@@ -5,6 +5,7 @@ Beautiful, user-friendly interface with dark theme
 
 import streamlit as st
 import time
+import os
 from rag_pipeline import RAGPipeline
 
 # Page configuration
@@ -101,14 +102,15 @@ with st.sidebar:
     st.markdown("### 📁 PDF Directory")
     st.markdown("**Where are your research papers?**")
     
+    # --- UPDATED PATH LOGIC: Default to "pdfs" folder relative to app.py ---
     pdf_directory = st.text_input(
-        "Enter full path to your PDF folder",
-        placeholder="C:\\Users\\YourName\\Desktop\\research-paper-rag\\pdfs",
-        help="Example: C:\\Users\\YourName\\Desktop\\research-paper-rag\\pdfs"
+        "Enter folder name (or full path)",
+        value="pdfs", 
+        help="Default is 'pdfs' folder in project root"
     )
     
     if pdf_directory:
-        st.info(f"📂 Directory: `{pdf_directory}`")
+        st.info(f"📂 Selected: `{pdf_directory}`")
     else:
         st.warning("⚠️ Enter path to PDF folder")
     
@@ -132,7 +134,16 @@ with st.sidebar:
             
             status_text.info("📄 Loading PDFs...")
             progress_bar.progress(30)
-            documents, metadata = st.session_state.rag_pipeline.load_pdfs_from_directory(pdf_directory)
+            
+            # --- CRITICAL FIX: Handle path correctly for Cloud vs Local ---
+            if pdf_directory == "pdfs":
+                # If using default, build the absolute path dynamically
+                target_dir = os.path.join(os.getcwd(), "pdfs")
+            else:
+                # If user typed something else, use that
+                target_dir = pdf_directory
+
+            documents, metadata = st.session_state.rag_pipeline.load_pdfs_from_directory(target_dir)
             
             st.session_state.doc_metadata = metadata
             status_text.success(f"✅ Loaded {len(metadata['pdf_files'])} PDFs")
@@ -190,10 +201,9 @@ if not st.session_state.documents_loaded:
         with st.expander("📖 Quick Setup", expanded=True):
             st.markdown("""
                 1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-                2. Place 7 PDFs in a folder
-                3. Enter API key and folder path in sidebar
-                4. Click "Load & Process Papers"
-                5. Start chatting!
+                2. Enter API key in sidebar
+                3. Click "Load & Process Papers" (PDFs are pre-loaded)
+                4. Start chatting!
             """)
 else:
     for message in st.session_state.messages:
@@ -216,7 +226,7 @@ else:
                     
                     with st.expander(f"📚 Citations ({len(message['metadata']['retrieved_docs'])})"):
                         for i, doc in enumerate(message["metadata"]["retrieved_docs"], 1):
-                            st.markdown(f"**[{i}]** `{doc.metadata.get('source')}` · Page {doc.metadata.get('page')}")
+                            st.markdown(f"**[{i}]** `{doc.metadata.get('source', 'Unknown')}` · Page {doc.metadata.get('page', '?')}")
                             st.markdown(f"> {doc.page_content[:200]}...")
                             st.markdown("---")
     
@@ -249,7 +259,7 @@ else:
                         
                         with st.expander(f"📚 Citations ({len(result['retrieved_docs'])})"):
                             for i, doc in enumerate(result["retrieved_docs"], 1):
-                                st.markdown(f"**[{i}]** `{doc.metadata.get('source')}` · Page {doc.metadata.get('page')}")
+                                st.markdown(f"**[{i}]** `{doc.metadata.get('source', 'Unknown')}` · Page {doc.metadata.get('page', '?')}")
                                 st.markdown(f"> {doc.page_content[:200]}...")
                                 st.markdown("---")
                     
