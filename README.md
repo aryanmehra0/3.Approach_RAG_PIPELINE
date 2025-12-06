@@ -1,4 +1,5 @@
-# 🔬 Research Paper RAG Assistant
+# 🔬 Research Paper RAG Assistant (Hosted link -  https://3approachragpipeline-eeo3knonhbejjbfkrmxyt9.streamlit.app/ )
+
 
 A production-grade RAG system for querying research papers with intelligent retrieval and citation.
 
